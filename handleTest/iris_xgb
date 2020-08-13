@@ -1,0 +1,77 @@
+digraph {
+    graph [ rankdir=TB ]
+
+    0 [ label="Sex<0.5" ]
+    0 -> 1 [label="yes, missing" color="#0000FF"]
+    0 -> 2 [label="no" color="#FF0000"]
+
+    1 [ label="Pclass<2.5" ]
+    1 -> 3 [label="yes, missing" color="#0000FF"]
+    1 -> 4 [label="no" color="#FF0000"]
+
+    3 [ label="leaf=0.0382373072" ]
+
+    4 [ label="Fare<1.5" ]
+    4 -> 7 [label="yes, missing" color="#0000FF"]
+    4 -> 8 [label="no" color="#FF0000"]
+
+    7 [ label="Ticket<347080.5" ]
+    7 -> 13 [label="yes, missing" color="#0000FF"]
+    7 -> 14 [label="no" color="#FF0000"]
+
+    13 [ label="leaf=0.00239531952" ]
+
+    14 [ label="leaf=0.0242857151" ]
+
+    8 [ label="Ticket<356600" ]
+    8 -> 15 [label="yes, missing" color="#0000FF"]
+    8 -> 16 [label="no" color="#FF0000"]
+
+    15 [ label="leaf=-0.020997921" ]
+
+    16 [ label="leaf=0.000209790189" ]
+
+    2 [ label="Pclass<1.5" ]
+    2 -> 5 [label="yes, missing" color="#0000FF"]
+    2 -> 6 [label="no" color="#FF0000"]
+
+    5 [ label="Ticket<17581" ]
+    5 -> 9 [label="yes, missing" color="#0000FF"]
+    5 -> 10 [label="no" color="#FF0000"]
+
+    9 [ label="Ticket<13538" ]
+    9 -> 17 [label="yes, missing" color="#0000FF"]
+    9 -> 18 [label="no" color="#FF0000"]
+
+    17 [ label="leaf=-0" ]
+
+    18 [ label="leaf=0.0116075268" ]
+
+    10 [ label="Ticket<17754.5" ]
+    10 -> 19 [label="yes, missing" color="#0000FF"]
+    10 -> 20 [label="no" color="#FF0000"]
+
+    19 [ label="leaf=-0.0364839248" ]
+
+    20 [ label="leaf=-0.0109497989" ]
+
+    6 [ label="Parch<0.5" ]
+    6 -> 11 [label="yes, missing" color="#0000FF"]
+    6 -> 12 [label="no" color="#FF0000"]
+
+    11 [ label="Ticket<1867" ]
+    11 -> 21 [label="yes, missing" color="#0000FF"]
+    11 -> 22 [label="no" color="#FF0000"]
+
+    21 [ label="leaf=-0.00746355578" ]
+
+    22 [ label="leaf=-0.0358681828" ]
+
+    12 [ label="Ticket<2667" ]
+    12 -> 23 [label="yes, missing" color="#0000FF"]
+    12 -> 24 [label="no" color="#FF0000"]
+
+    23 [ label="leaf=-0" ]
+
+    24 [ label="leaf=-0.0161079932" ]
+}
