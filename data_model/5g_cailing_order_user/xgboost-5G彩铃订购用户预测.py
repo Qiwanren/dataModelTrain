@@ -5,6 +5,7 @@ from xgboost import plot_importance
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 
+from utils.handle_pyplot import showTree
 
 le = LabelEncoder()
 from time import strftime, localtime
@@ -128,18 +129,20 @@ def changeType(data):
 
 printTime()
 trainFilePath = 'D:/data/python/work/qwr_woyinyue_basic_result1.txt'
-testFilePath = 'D:/data/python/work/qwr_woyinyue_user_result2006_87.txt'
+testFilePath = 'D:/data/python/work/qwr_woyinyue_basic_result2.txt'
+
 ## , 'fj_arpu'
 all_params = ['prov_id','user_id','cust_id','product_id','area_id','device_number','cust_sex','cert_age','total_fee','jf_flux','fj_arpu',
               'ct_voice_fee','total_flux','total_dura','roam_dura','total_times','total_nums','local_nums','roam_nums','in_cnt','out_cnt',
               'in_dura','out_dura','heyue_flag','is_limit_flag','product_type','5g_flag','visit_cnt','visit_dura','up_flow','down_flow',
               'total_flow','active_days','brand','brand_flag','brand_detail','imei_duration','avg_duratioin']
+
 labels = ['flag']
 label = 'flag'
 
 all_params1 = all_params
 train = pd.read_csv(filepath_or_buffer=trainFilePath, sep="|", names=all_params + labels, encoding='utf-8')
-test = pd.read_csv(filepath_or_buffer=testFilePath, sep=",", names=all_params, encoding='utf-8')
+test = pd.read_csv(filepath_or_buffer=testFilePath, sep="|", names=all_params + labels, encoding='utf-8')
 
 ## 对空值和分类字段进行处理
 train1 = changeType(train)
@@ -148,26 +151,26 @@ test1 = changeType(test)
 
 
 ## 生成DMatrix,字段内容必须为数字或者boolean    , 'fj_arpu'
-x_featur_params = ['prov_id','cert_age','total_fee','fj_arpu','ct_voice_fee','total_flux','jf_flux',
+x_featur_params = ['prov_id','cert_age','total_fee','ct_voice_fee','total_flux','jf_flux',
                    'total_dura','total_times','local_nums','roam_nums','in_cnt','out_cnt','in_dura','out_dura',
                    'heyue_flag','5g_flag','visit_cnt','visit_dura','up_flow','down_flow','total_flow','active_days',
                    'brand_flag','imei_duration','avg_duratioin']
 
-x_featur_params2 = ['prov_id','cert_age','total_fee','fj_arpu','total_flux',
-                   'total_dura','total_times','local_nums','roam_nums','in_cnt','out_cnt',
-                   'visit_cnt','visit_dura','up_flow','down_flow','total_flow','active_days','imei_duration','avg_duratioin']
+x_featur_params2 = ['prov_id','cert_age','total_fee','fj_arpu','ct_voice_fee','total_flux','jf_flux',
+                   'total_dura','total_times','local_nums','roam_nums','in_cnt','out_cnt','in_dura','out_dura',
+                   'heyue_flag','5g_flag','visit_cnt','visit_dura','up_flow','down_flow','total_flow','active_days',
+                   'brand_flag','imei_duration','avg_duratioin']
 
 xgb_train = xgb.DMatrix(train1[x_featur_params],train1[label])
 xgb_test = xgb.DMatrix(test1[x_featur_params])
-
-#y_test = test1['flag'].apply(lambda x: handleFlagField(x))
+y_test = test1[label].apply(lambda x: handleFlagField(x))
 
 ## 定义模型训练参数
 params = {
     'booster': 'gbtree',   ####  gbtree   gblinear
     'objective': 'binary:logistic',  # 多分类的问题  'objective': 'binary:logistic' 二分类，multi:softmax 多分类问题
     'gamma': 0.01,                  # 用于控制是否后剪枝的参数,越大越保守，一般0.1、0.2这样子。
-    'max_depth': 6,               # 构建树的深度，越大越容易过拟合
+    'max_depth': 9,               # 构建树的深度，越大越容易过拟合
     'min_child_weight': 1.5,
     'eta': 0.01,                  # 如同学习率
     'learning_rate':0.1,
@@ -179,11 +182,16 @@ params = {
 plst = params.items()
 ## 训练轮数
 num_rounds = [215,300,400,500]
-num_round = 215
+num_round = 500
 print(num_round)
 printTime()
+
 ## 模型训练
 model = xgb.train(params, xgb_train, num_round)
+
+## 特征拟合
+#model.fit(x_train,y_train)
+showTree(model)
 
 ## 分析特征值
 importance = model.get_fscore()
@@ -191,16 +199,21 @@ importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
 
 ans = model.predict(xgb_test)
 
-test1['score'] = ans
-#print('预测值AUC为 ：%f' % roc_auc_score(y_test, ans))
+## 显示决策树
+showTree(model)
+
+test['score'] = ans
+
+print('预测值AUC为 ：%f' % roc_auc_score(y_test, ans))
 
 # 对结果归一化处理
-test1['score1'] = (test1['score'] - test1['score'].min()) / (test1['score'].max() - test1['score'].min())
+test['score1'] = (test['score'] - test['score'].min()) / (test['score'].max() - test['score'].min())
 
 # 将结果输出到文件
-test1.to_csv('D:/data/python/work/result'+str(num_round)+'.csv')
+test.to_csv('D:/data/python/work/result'+str(num_round)+'.csv')
 
 # 显示重要特征
 plot_importance(model)
 plt.show()
 printTime()
+

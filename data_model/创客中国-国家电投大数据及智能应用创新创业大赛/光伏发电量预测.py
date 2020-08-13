@@ -5,6 +5,13 @@ from lightgbm import LGBMRegressor
 from xgboost import XGBRegressor
 
 
+'''
+enumerate : 将一个可遍历的数据对象(如列表、元组或字符串)组合为一个索引序列
+    seasons = ['Spring', 'Summer', 'Fall', 'Winter']
+    list(enumerate(seasons))
+    [(0, 'Spring'), (1, 'Summer'), (2, 'Fall'), (3, 'Winter')]
+
+'''
 def data_corection(data):
     ID=data['ID']
     for feature_num,feature in enumerate(data.keys()):

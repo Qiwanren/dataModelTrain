@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
+import pandas as pd
+import xgboost as xgb
 
 def showZft(data,feature):
     # 设置matplotlib正常显示中文和负号
@@ -25,6 +27,17 @@ def showZft(data,feature):
     plt.title(feature+" 分布直方图")
     plt.show()
 
+##绘制决策树
+def showTree(model):
+
+    xgb.to_graphviz(model, num_trees=1)
+    digraph = xgb.to_graphviz(model, num_trees=1)
+    digraph.format = 'png'
+    digraph.view('./iris_xgb')
+
 if __name__ == '__main__':
     data = np.random.randn(10000)
-    #showZft(data)
+
+    store = pd.DataFrame([['Snow', 'M', 22], [0.0, 11.0, 'unknow'], ['Sansa', 'F', 18], ['Arya', 'F', 14]],
+                       columns=['name', 'gender', 'age'])
+    feature = 'gender'
