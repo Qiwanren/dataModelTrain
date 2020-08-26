@@ -1,11 +1,17 @@
 import pandas as pd
+import numpy as np
 import xgboost as xgb
+from sklearn.metrics import roc_auc_score
 from xgboost import plot_importance
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 # 划分数据集
 from sklearn.model_selection import train_test_split
-from utils.handle_pyplot import showTree
+from utils.handle_pyplot import showTree, draw_heatmap, showZft
+
+pd.set_option('display.max_columns', 1000)
+pd.set_option('display.width', 1000)
+pd.set_option('display.max_colwidth', 1000)
 
 le = LabelEncoder()
 from time import strftime, localtime
@@ -14,243 +20,208 @@ from time import strftime, localtime
 def printTime():
     print(strftime("%Y-%m-%d %H:%M:%S", localtime()))
     return
+def messagePrint(x):
+    print(x)
+    print('----------------------------------------')
 
-def handleFlagField(x):
-    if x !=1 and x !=0:
-        return 0
-    else:
-        return x
-'''
-    指定数据字段的类型及处理空值
-'''
-### 处理类别型特征
-def one_hot(dataFrame,feature):
-    dummies = pd.get_dummies(dataFrame[feature], prefix=feature)
-    dataFrame = pd.concat([dataFrame, dummies], axis=1)
-    return dataFrame
-
-## 删除完成one-hot编码的特征
-def dropFeature(dataF,features):
-    dataF.drop(features, axis=1, inplace=True)  # inplace=True, 直接从内部删除
-
-def changeType(data):
-    data['user_id'].fillna('9999999999', inplace=True)
-    data['prov_id'] = data['prov_id'].apply(pd.to_numeric, errors='coerce').fillna(99)
-    data['product_id'].fillna('9999999', inplace=True)
-    data['area_id'].fillna('0991', inplace=True)
-    data['device_number'].fillna('9999999999', inplace=True)
-    data['cust_sex'].fillna(1, inplace=True)
-    data['cert_age'] = data['cert_age'].apply(pd.to_numeric, errors='coerce').fillna(34.98)
-    data["cert_age"] = data["cert_age"].round(2)
-    data['total_fee'] = data['total_fee'].apply(pd.to_numeric, errors='coerce').fillna(60.66)
-    data["total_fee"] = data["total_fee"].round(2)
-    data['jf_flux'] = data['jf_flux'].apply(pd.to_numeric, errors='coerce').fillna(6.9)
-    data["jf_flux"] = data["jf_flux"].round(1)
-    data['fj_arpu'] = data['fj_arpu'].apply(pd.to_numeric, errors='coerce').fillna(5.4)
-    data["fj_arpu"] = data["fj_arpu"].round(1)
-    data['ct_voice_fee'] = data['ct_voice_fee'].apply(pd.to_numeric, errors='coerce').fillna(4.0)
-    data["ct_voice_fee"] = data["ct_voice_fee"].round(1)
-    data['total_flux'] = data['total_flux'].apply(pd.to_numeric, errors='coerce').fillna(16265.98)
-    data["total_flux"] = data["total_flux"].round(2)
-    data['total_dura'] = data['total_dura'].apply(pd.to_numeric, errors='coerce').fillna(322.45)
-    data["total_dura"] = data["total_dura"].round(2)
-    data['roam_dura'] = data['roam_dura'].apply(pd.to_numeric, errors='coerce').fillna(64.81)
-    data["roam_dura"] = data["roam_dura"].round(2)
-    data['total_times'] = data['total_times'].apply(pd.to_numeric, errors='coerce').fillna(434.88)
-    data["total_times"] = data["total_times"].round(2)
-    data['total_nums'] = data['total_nums'].apply(pd.to_numeric, errors='coerce').fillna(204.89)
-    data["total_nums"] = data["total_nums"].round(2)
-    data['local_nums'] = data['local_nums'].apply(pd.to_numeric, errors='coerce').fillna(156.85)
-    data["local_nums"] = data["local_nums"].round(2)
-    data['roam_nums'] = data['roam_nums'].apply(pd.to_numeric, errors='coerce').fillna(36.26)
-    data["roam_nums"] = data["roam_nums"].round(2)
-    data['in_cnt'] = data['in_cnt'].apply(pd.to_numeric, errors='coerce').fillna(100.04)
-    data["in_cnt"] = data["in_cnt"].round(2)
-    data['out_cnt'] = data['out_cnt'].apply(pd.to_numeric, errors='coerce').fillna(104.86)
-    data["out_cnt"] = data["out_cnt"].round(2)
-    data['in_dura'] = data['in_dura'].apply(pd.to_numeric, errors='coerce').fillna(152.31)
-    data["in_dura"] = data["in_dura"].round(1)
-    data['out_dura'] = data['out_dura'].apply(pd.to_numeric, errors='coerce').fillna(169.66)
-    data["out_dura"] = data["out_dura"].round(1)
-    data['visit_cnt'] = data['visit_cnt'].apply(pd.to_numeric, errors='coerce').fillna(2231.73)
-    data["visit_cnt"] = data["visit_cnt"].round(2)
-    data['visit_dura'] = data['visit_dura'].apply(pd.to_numeric, errors='coerce').fillna(35562.76)
-    data["visit_dura"] = data["visit_dura"].round(2)
-    data['up_flow'] = data['up_flow'].apply(pd.to_numeric, errors='coerce').fillna(1.14)
-    data["up_flow"] = data["up_flow"].round(2)
-    data['down_flow'] = data['down_flow'].apply(pd.to_numeric, errors='coerce').fillna(4.67)
-    data["down_flow"] = data["down_flow"].round(2)
-    data['total_flow'] = data['total_flow'].apply(pd.to_numeric, errors='coerce').fillna(4.91)
-    data["total_flow"] = data["total_flow"].round(2)
-    data['active_days'] = data['active_days'].apply(pd.to_numeric, errors='coerce').fillna(9.96)
-    data["active_days"] = data["active_days"].round(2)
-    data['imei_duration'] = data['imei_duration'].apply(pd.to_numeric, errors='coerce').fillna(12.0)
-    data["imei_duration"] = data["imei_duration"].round(2)
-    data['avg_duratioin'] = data['avg_duratioin'].apply(pd.to_numeric, errors='coerce').fillna(12.0)
-    data["avg_duratioin"] = data["avg_duratioin"].round(2)
-    data['brand_flag'] = data['brand_flag'].apply(pd.to_numeric, errors='coerce').fillna(13)
-    data['heyue_flag'] = data['heyue_flag'].apply(pd.to_numeric, errors='coerce').fillna(0)
-    data['is_limit_flag'] = data['is_limit_flag'].apply(pd.to_numeric, errors='coerce').fillna(0)
-    data['product_type'].fillna('other', inplace=True)
-    data['5g_flag'] = data['5g_flag'].apply(pd.to_numeric, errors='coerce').fillna(0)
-
-    #data['flag'].fillna(0, inplace=True)
-    return data
-
-## 处理类别对象，返回整数
-def handleTypeFlag(n):
-    return round(n)
-
-## 处理省分ID字段
+## 处理省分ID字段,填补零
 def handleProvID(x):
     prov_id = str(x)
     return prov_id.zfill(3)
 
-## 将流量的单位转换为G
-def handleFluxBigValue(x):
-    return x/1024/1024
+## 处理类别对象，返回整数
+def handleTypeFlag(n):
+    if n !=1 and n !=0:
+        return None
+    else:
+        return round(n)
 
-def handleVoiceBigValue(x):
-    return x /60/60
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        pass
+    try:
+        import unicodedata
+        unicodedata.numeric(s)
+        return True
+    except (TypeError, ValueError):
+        pass
+    return False
+## 检查数据中的异常值
+def unusualValueForCol(data):
+    # 年龄数据均为大于零的数据值
+    features1 = ['cert_age','jf_flux','fj_arpu','ct_voice_fee']
+    for f in features1:
+        data[f] = data[f].map(lambda x: x if x > 0 else None)
+    # 流量及语音数据进行单位转换
+    features2 = ['total_dura', 'visit_dura']
+    features3 = ['up_flow', 'down_flow','total_flow','total_flux']
+    # 将日期数据转换以小时为单位的数据值
+    for f1 in features2:
+        data[f1] = data[f1].map(lambda x:x/60/60 if x>0 else None)
+    # 将流量数据转换为G为单位的数据值
+    for f3 in features3:
+        data[f3] = data[f3].map(lambda x:x/1024/1024 if x>0 else None)
+    return data
+
+# 使用占比较多的类别，填补类别缺失值
+def fileDeficiencyValue1(data):
+    # 预先处理flag字段
+    data['flag'] = data['flag'].apply(lambda x: handleTypeFlag(x))
+    type_feature = ['prov_id', 'cust_sex', 'brand_flag', 'heyue_flag', 'is_limit_flag', 'product_type', '5g_flag','flag']
+    # 对定性数据，进行填充，填充值为占比最大的类别
+    for f in type_feature:
+        type_value = data[f].value_counts().index[0]
+        data[f].fillna(type_value, inplace=True)
+
+    # 为省分值数据，若缺零，则进行填补
+    data['prov_id'] = data['prov_id'].apply(lambda x:handleProvID(x))
+    return data
+# 使用均值填充缺失的数据，同时对数据进行归一化处理
+def fileDeficiencyValue2(data):
+    nums_params = ['cert_age', 'total_fee', 'jf_flux', 'fj_arpu', 'ct_voice_fee', 'total_flux', 'total_dura',
+                      'roam_dura', 'total_times', 'total_nums', 'local_nums', 'roam_nums', 'in_cnt', 'out_cnt',
+                      'in_dura','out_dura', 'visit_cnt', 'visit_dura', 'up_flow', 'down_flow', 'total_flow', 'active_days',
+                      'imei_duration', 'avg_duratioin']
+
+    # 单独处理avg_duratioin字段
+    data['avg_duratioin'] = data['avg_duratioin'].apply(pd.to_numeric, errors='coerce').fillna(13.6)
+
+    ## 使用均值填充定量数据的缺失字段
+    for param in nums_params:
+        data[param] = data[param].map(lambda x:x if is_number(x) else None)
+        avg_n = data[param].mean()
+        #data[param] = data[param].apply(pd.to_numeric, errors='coerce').fillna(avg_n)
+        data[param].fillna(avg_n,inplace=True)
+        data[param] = data[param].round(2)
+
+    # 通过min_max方式对数据进行归一化处理
+    data[param] = data[param].apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
+    return data
+
+def handleTypeFeature(data):
+    type_feature = ['prov_id', 'cust_sex', 'brand_flag', 'heyue_flag', 'is_limit_flag', 'product_type', '5g_flag']
+    for f in type_feature:
+        dummies = pd.get_dummies(data[f], prefix=f)
+        data = pd.concat([data, dummies], axis=1)
+    # 删除完成编码的特征值
+    for f1 in type_feature:
+        data = dropFeature(data, f1)
+    return data
+
+## 删除完成one-hot编码的特征
+def dropFeature(dataF,features):
+    dataF.drop(features, axis=1, inplace=True)  # inplace=True, 直接从内部删除
+    return dataF
 
 printTime()
-trainFilePath = 'D:/data/python/work/qwr_woyinyue_basic_result1.txt'
-testFilePath = 'D:/data/python/work/qwr_woyinyue_user_result2006_087.txt'
 
-all_params = ['prov_id','user_id','cust_id','product_id','area_id','device_number','cust_sex','cert_age','total_fee','jf_flux','fj_arpu',
-              'ct_voice_fee','total_flux','total_dura','roam_dura','total_times','total_nums','local_nums','roam_nums','in_cnt','out_cnt',
-              'in_dura','out_dura','heyue_flag','is_limit_flag','product_type','5g_flag','visit_cnt','visit_dura','up_flow','down_flow',
-              'total_flow','active_days','brand','brand_flag','brand_detail','imei_duration','avg_duratioin']
+def readData(path,labels):
+    all_params = ['prov_id','user_id','cust_id','product_id','area_id','device_number','cust_sex','cert_age','total_fee','jf_flux','fj_arpu',
+                  'ct_voice_fee','total_flux','total_dura','roam_dura','total_times','total_nums','local_nums','roam_nums','in_cnt','out_cnt',
+                  'in_dura','out_dura','heyue_flag','is_limit_flag','product_type','5g_flag','visit_cnt','visit_dura','up_flow','down_flow',
+                  'total_flow','active_days','brand','brand_flag','brand_detail','imei_duration','avg_duratioin']
+    train = pd.read_csv(filepath_or_buffer=path, sep="|", names=all_params + labels, encoding='utf-8')
+    return train
 
-labels = ['flag']
-label = 'flag'
+def dataHandle(dataset):
 
-all_params1 = all_params
-train = pd.read_csv(filepath_or_buffer=trainFilePath, sep="|", names=all_params + labels, encoding='utf-8')
-test = pd.read_csv(filepath_or_buffer=testFilePath, sep="|", names=all_params + labels, encoding='utf-8')
-
-
-print('--- begin to basic handle  -----')
-train1 = changeType(train)
-test1 = changeType(test)
-
-## 处理类别对象
-full_data = [train1, test1]
-for dataset in full_data:
-    print('--- begin to handle type values -----')
-    dataset['brand_flag'] = dataset['brand_flag'].apply(lambda x : handleTypeFlag(x))
-    dataset['heyue_flag'] = dataset['heyue_flag'].apply(lambda x : handleTypeFlag(x))
-    dataset['is_limit_flag'] = dataset['is_limit_flag'].apply(lambda x : handleTypeFlag(x))
-    dataset['5g_flag'] = dataset['5g_flag'].apply(lambda x : handleTypeFlag(x))
-    dataset['prov_id'] = dataset['prov_id'].apply(lambda x: handleProvID(x))
-    dataset['cust_sex'] = dataset['cust_sex'].apply(lambda x: handleTypeFlag(x))
-
-    ## 处理过大值
-    print('--- begin to handle big values -----')
-    dataset['total_dura'] = dataset['total_dura'].apply(lambda x: handleVoiceBigValue(x))
-    dataset['visit_dura'] = dataset['visit_dura'].apply(lambda x: handleVoiceBigValue(x))
-    dataset['up_flow'] = dataset['up_flow'].apply(lambda x: handleFluxBigValue(x))
-    dataset['down_flow'] = dataset['down_flow'].apply(lambda x: handleFluxBigValue(x))
-    dataset['total_flow'] = dataset['total_flow'].apply(lambda x: handleFluxBigValue(x))
-    dataset['total_flux'] = dataset['total_flux'].apply(lambda x: handleFluxBigValue(x))
+    # 处理异常的数据
+    dataset = unusualValueForCol(dataset)
+    # 处理定性数据
+    dataset = fileDeficiencyValue1(dataset)
+    # 处理定量数据
+    dataset = fileDeficiencyValue2(dataset)
+    # 检查空值
+    messagePrint(dataset.isnull().sum())
+    # 对定性数据进行编码
+    dataset = handleTypeFeature(dataset)
+    print('-----------------------完成基础性处理-------------------------')
+    return dataset
 
 
-train1[label] = train1[label].apply(lambda x: handleFlagField(x))
-train1[label] = train1[label].apply(lambda x: handleTypeFlag(x))
-y_train = train1[label]
+def xgboostModelTrain(x_train,y_train,x_test,y_test):
+    # 生成DMatrix,字段内容必须为数字或者boolean
+    gb_train = xgb.DMatrix(x_train, y_train)
+    xgb_test = xgb.DMatrix(x_test)
+    ## 定义模型训练参数
+    params = {
+        'booster': 'gbtree',  ####  gbtree   gblinear
+        'objective': 'binary:logistic',  # 多分类的问题  'objective': 'binary:logistic' 二分类，multi:softmax 多分类问题
+        'gamma': 0.0,  # 用于控制是否后剪枝的参数,越大越保守，一般0.1、0.2这样子。
+        'max_depth': 7,  # 构建树的深度，越大越容易过拟合
+        'min_child_weight': 5,
+        'eta': 0.15,  # 如同学习率
+        'learning_rate': 0.08,
+        'subsample': 0.5,
+        'colsample_bytree': 0.77,
+        'reg_alpha': 1.0
+    }
 
-test1[label] = test1[label].apply(lambda x: handleFlagField(x))
-test1[label] = test1[label].apply(lambda x: handleTypeFlag(x))
-y_test = test1[label]
 
-x_featur_params = ['prov_id','cust_sex','cert_age','total_fee','ct_voice_fee','total_flux','jf_flux','fj_arpu','product_type',
-                   'total_dura','total_times','local_nums','roam_nums','in_cnt','out_cnt','in_dura','out_dura',
-                   'heyue_flag','5g_flag','is_limit_flag','visit_cnt','visit_dura','up_flow','down_flow','total_flow','active_days',
-                   'brand_flag','imei_duration','avg_duratioin']
+    ## 寻找最佳的 n_estimators
+    plst = params.items()
+    ## 训练轮数
+    num_rounds = [215, 300, 400, 500]
+    num_round = 145
+    print(num_round)
+    printTime()
+    print('--- begin to train model -----')
+    ## 模型训练
+    model = xgb.train(params, gb_train, num_round)
+    ## 特征拟合
+    #model.fit(x_train,y_train)
+    # showTree(model)
 
+    ## 分析特征值
+    importance = model.get_fscore()
+    importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
 
-train1 = train1[x_featur_params]
-test1 = test1[x_featur_params]
+    ans = model.predict(xgb_test)
+   # print('预测值AUC为 ：%f' % roc_auc_score(y_test, ans))
+    # 显示重要特征
+    plot_importance(model)
+    plt.show()
+    printTime()
+    return ans
 
-type_feature = ['prov_id','cust_sex','brand_flag','heyue_flag','is_limit_flag','product_type','5g_flag']
+if __name__ == '__main__':
+    trainFilePath = 'D:/data/python/work/qwr_woyinyue_basic_result1.txt'
+    testFilePath = 'D:/data/python/work/qwr_woyinyue_user_result2006_087.txt'
+    x_feature_params = ['prov_id','cust_sex','cert_age', 'total_fee', 'jf_flux', 'fj_arpu', 'ct_voice_fee', 'total_flux', 'total_dura',
+                       'roam_dura', 'total_times', 'total_nums', 'local_nums', 'roam_nums', 'in_cnt', 'out_cnt', 'in_dura',
+                       'out_dura', 'visit_cnt','visit_dura', 'up_flow', 'down_flow', 'total_flow', 'active_days','brand_flag','heyue_flag',
+                        'is_limit_flag','product_type','5g_flag', 'imei_duration', 'avg_duratioin','flag']
 
-## 对分类特征进行one-hot编码
-for feature in type_feature:
-    train1 = one_hot(train1, feature)
-    test1 = one_hot(test1,feature)
-
-## 删除被one-hot编码的列
-no_avg_feature = ['jf_flux','fj_arpu','ct_voice_fee']
-full_data = [train1, test1]
-for dataset in full_data:
-    dropFeature(dataset,type_feature)
-    dropFeature(dataset, no_avg_feature)
-
-### 切分数据集,均分数据集
-x_train, x_test, y_train, y_test = train_test_split(train1, y_train, test_size = 0.5, random_state = 0)
-print(train1.shape)
-print('----------------------------------------------------')
-print(test1.shape)
-
-## 生成DMatrix,字段内容必须为数字或者boolean
-gb_train = xgb.DMatrix(x_train,y_train)
-xgb_test = xgb.DMatrix(x_test)
-
-## 定义模型训练参数
-params = {
-    'booster': 'gbtree',   ####  gbtree   gblinear
-    'objective': 'binary:logistic',  # 多分类的问题  'objective': 'binary:logistic' 二分类，multi:softmax 多分类问题
-    'gamma': 0.0,                  # 用于控制是否后剪枝的参数,越大越保守，一般0.1、0.2这样子。
-    'max_depth': 7,               # 构建树的深度，越大越容易过拟合
-    'min_child_weight': 5,
-    'eta': 0.15,                  # 如同学习率
-    'learning_rate':0.08,
-    'subsample':0.5,
-    'colsample_bytree':0.77,
-    'reg_alpha':1.0
-}
-
-## 寻找最佳的 n_estimators
-plst = params.items()
-## 训练轮数
-num_rounds = [215,300,400,500]
-num_round = 145
-print(num_round)
-printTime()
-print('--- begin to train model -----')
-## 模型训练
-model = xgb.train(params, gb_train, num_round)
-
-## 特征拟合
-#model.fit(x_train,y_train)
-#showTree(model)
-
-## 分析特征值
-importance = model.get_fscore()
-importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
-
-ans = model.predict(xgb_test)
-
-## 显示决策树
-showTree(model)
-
-test1['score'] = ans
-x_test['score'] = ans
-x_test['flag'] = y_test
-
-## 将数据写入文件
-
-#print('预测值AUC为 ：%f' % roc_auc_score(y_test, ans))
-
-# 对结果归一化处理
-print('--- begin to gyh data -----')
-x_test['score1'] = (test['score'] - x_test['score'].min()) / (x_test['score'].max() - x_test['score'].min())
-print('--- begin to write data -----')
-# 将结果输出到文件
-x_test.to_csv('D:/data/python/work/qwr_woyinyue_basic_result1'+str(num_round)+'.csv')
-
-# 显示重要特征
-plot_importance(model)
-plt.show()
-printTime()
-
+    x_feature_params = ['prov_id','cert_age', 'fj_arpu', 'total_flux', 'visit_cnt', 'visit_dura', 'up_flow', 'down_flow', 'total_flow', 'active_days']
+    labels = ['flag']
+    label = 'flag'
+    # 读取训练集数据
+    train = readData(trainFilePath,labels)
+    train = train[x_feature_params]
+    # 读取测试数据
+    test = readData(testFilePath,labels)
+    test = test[x_feature_params]
+    # 基础数据处理
+    train = dataHandle(train)
+    messagePrint(train[label].value_counts())
+    test = dataHandle(test)
+    messagePrint(test[label].value_counts())
+    # 训练模型
+    x_train = train.iloc[:, train.columns != label]
+    y_train = train['flag']
+    x_test = test.iloc[:, test.columns != label]
+    #y_test = test['flag']
+    y_test = []
+    # 模型训练数据
+    messagePrint('------------------------------- begin to train model -----------------------------------')
+    messagePrint(x_train.shape)
+    messagePrint(x_test.shape)
+    xgboostModelTrain(x_train,y_train,x_test,y_test)  # 预测值AUC为 ：0.939315
+    #draw_heatmap(train1)
+    # 显示数据直方图
+    #for f in number_params1:
+        #showZft(train1[f],f)

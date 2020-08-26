@@ -92,6 +92,8 @@ def handleBrandFlag(data):
     data['cust_sex'].fillna(1, inplace=True)
     return data
 
+def handleAvg_duratioinValue(df1,x):
+    print(df1.head())
 
 
 
@@ -111,16 +113,5 @@ all_params1 = all_params
 train = pd.read_csv(filepath_or_buffer=trainFilePath, sep="|", names=all_params + labels, encoding='utf-8')
 test = pd.read_csv(filepath_or_buffer=testFilePath, sep=",", names=all_params, encoding='utf-8')
 
-
-train = handleBrandFlag(train)
-test = handleBrandFlag(test)
-
-train['cust_sex'] = train['cust_sex'].apply(lambda x : handleTypeFlag(x))
-test['cust_sex'] = test['cust_sex'].apply(lambda x : handleTypeFlag(x))
-
-print(train['cust_sex'].unique())
-print(test['cust_sex'].unique())
-## 对分类特征进行one-hot编码
-train1 = one_hot(train, 'cust_sex')
-test1 = one_hot(test,'cust_sex')
+train.apply(lambda x:handleAvg_duratioinValue(train,x))
 
