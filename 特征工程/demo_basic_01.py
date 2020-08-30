@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+from pyspark.ml.feature import Imputer
+from sklearn.model_selection import train_test_split
+
 from utils.handle_pyplot import showZft
 
 pd.set_option('display.max_columns', 1000)
@@ -11,9 +14,6 @@ pd.set_option('display.max_colwidth', 1000)
 目录：
     方法1：基础操作，处理空值
     方法2：处理分类数据
-
-
-
 
 '''
 
@@ -68,25 +68,102 @@ def method01():
     for feature in features:
         train1_sub_china[feature] = train1_sub_china[feature].map(lambda x: x if x != 0 else None)  ## 如果x != 0，则返回原来值，如果 x == 0,则设置为空
         # print('AverageTemperature null :',train1_sub_china['AverageTemperature'].isnull().sum())
+
+
+# 输入参数为X数据集合
+# 分析缺失值
+def getDropRate(data):
     # 检查变量缺失情况
     # print(train1_sub_china.isnull().sum())
 
-    # 移除缺失值
-    data_dropped = train1_sub_china.isnull().sum()
-    # messagePrint(data_dropped)
-    train1_sub_china.dropna(axis=0, inplace=True)
+    # 查看特征的空值情况
+    print(data.isnull().sum())
+    # s删除特征
+    data.dropna(axis=0, inplace=True)
     # 检查变量缺失情况
-    # messagePrint(train1_sub_china.isnull().sum())
-    ## 查看数据规模
-    # print(train1_sub_china.shape)
+    messagePrint(data.isnull().sum())
+    # 查看空值率
+        # 删除存在缺失的行
+    pima_dropped = data.dropna()
+        # 检查缺失率
+    num_rows_list = round(100*(data.shape[0] - pima_dropped[0])/float(data.shape[0]))
+    print("retained {} % of rows".format(num_rows_list))
+    # 查看删除之后均值变化
+    print(data.mean())
 
-    ## 特征变化比
-    # print(train1_sub_china.shape[0])
-    fe_drop_data_index = data_dropped.index.tolist()
-    fe_drop_data_values = data_dropped.values
-    f1 = np.arange(0, len(fe_drop_data_index), 1)
-    for i in f1:
-        print(fe_drop_data_index[i] + ' : ', round(fe_drop_data_values[i] / 827802, 2))
+# 输入参数为X数据集合
+# 对数据进行填充
+'''
+尝试用0，中位数，均值，众数进行填充，并查询对应的模型准确率
+'''
+def dataAdd(X,y):
+    # 使用相同的随机状态，划分测试集和训练集
+    x_train,x_test,y_train,y_test = train_test_split(X,y,random_state=99)
+
+'''
+标准化和归一化
+    标准化通过确保所有行和列在机器学习中得到平等的对待，让数据尺度保持一致
+    使用方法：
+        1、z分数标准化
+        2、min-max标准化
+        3、行归一化
+    受数据尺度影响的模型
+        KNN ，K均值聚类 - 因为依赖欧几里得距离
+        逻辑回归，支持向量机，神经网络 - 如果使用梯度下降来学习权重
+        主成分分析 - 特征向量将偏向较大的列
+    尝试：
+        删除存在缺失的行        影响列数          测算准确率
+        用零填充                
+        用均值填充
+        用中位数填充
+        用众数填充
+        用中位数填充，z分数标准化
+        用均值填充，min_max标准化
+        用均值填充，行归一化
+'''
+def biaozhunhuaAndGuiyihua(X):
+    impute = Imputer(strategy='mean')
+    # 填充所有的缺失值
+    pima_imputed_mean = pd.DataFrame(impute.fit_transform(X))
+    # 图形显示
+    pima_imputed_mean.hist(figsize=(15,15))
+
+    # 通过describe方法查看均值，最大最小值等情况
+    pima_imputed_mean.describe()
+    # 通过设置参数，同比例下查看数据特征的情况
+    # sharex : X轴同比例，sharey ： Y轴同比例
+    pima_imputed_mean.hist(figsize=(15, 15),sharex=True)
+
+# z分数标准化的输出会被重新缩放，使得均值为0，标准差为1，通过缩放特征和统一化均值和方差，可以让类似KNN模型达到最优，而不会倾向于大比例的特征
+def Z_SCORE_Handle(X):
+    # 通过sklearn使用Z分数标准化
+    from sklearn.preprocessing import StandardScaler
+    # z分数标准化前的均值和方差
+    X['feature1'].mean()
+    X['feature1'].std()
+    ax = X['feature1'].hist()
+    ax.set_title('Distribution of plasma_glucose_concentration')
+    # z分数标准化
+    scaler = StandardScaler()
+    glucose_z_score_standardized = scaler.fit_transform(X[['feature1']])
+    print(glucose_z_score_standardized.mean(),glucose_z_score_standardized.std())
+    ax = pd.Series(glucose_z_score_standardized.reshape(-1)).hist()
+    ax.set_title('Distribution of plasma_glucose_concentration after Z score Scaling')
+# 使用min_max进行归一化
+def min_max_handle(X):
+    from sklearn.preprocessing import MinMaxScaler
+    # 实例化
+    min_max = MinMaxScaler()
+    # 使用min_max进行标准化
+    pima_min_maxed = pd.DataFrame(min_max.fit_transform(X))
+    # 得到统计性描述
+    pima_min_maxed.describe()
+
+
+
+
+
+
 
 '''
 特征增强

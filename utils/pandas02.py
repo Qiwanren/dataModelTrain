@@ -138,11 +138,157 @@ def jiequzifuchuan():
         path = 'D:/data/python/work/result_' + filename + '.csv'
         print(path)
 
-def twoDf_pingjie(df1,df2):
-    pass
+def twoDf_pingjie():
+    data = {'city': ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen', 'Hangzhou', 'Chongqing'],
+            'year': [2016, 2016, 2015, 2017, 2016, 2016],
+            'population': [2100, 2300, 1000, 700, 500, 500]}
+    frame = pd.DataFrame(data, columns=['year', 'city', 'population', 'debt'])
+    print(frame.info())
+    labels = [ 'population', 'debt']
+    frame.drop(labels, axis=1, inplace=True)  # inplace=True, 直接从内部删除
+    print(frame.info())
+
+# 数值映射
+def method01():
+    df = pd.DataFrame({'食物': ['苹果', '橘子', '黄瓜', '番茄', '五花肉'],
+                    '价格': [7, 5, 4, 3, 12],
+                    '数量': [5, 8, 3, 4, 2]})
+    map_dict = {
+        '苹果': '水果',
+        '橘子': '水果',
+        '黄瓜': '蔬菜',
+        '番茄': '蔬菜',
+        '五花肉': '肉类'
+    }
+    df['分类'] = df['食物'].map(map_dict)
+    print(df)
+
+# 读取数据，并返回字典格式数据
+def readDataToDict():
+    test_path = 'D:/data/python/work/city_line_message.csv'
+    names = ['area_id','city_leave']
+    train = pd.read_csv(filepath_or_buffer=test_path, sep=",", names=names, encoding='utf-8')
+    print(train)
+    d1 = train['area_id'].value_counts()
+    print(type(d1))
+    list1 = train['area_id']
+    list2 = train['city_leave']
+    data_dict = dict(zip(list1, list2))  # {'k2': 'b', 'k1': 'a'}
+    print(data_dict)
+# 复制最后一行，并追加到最后面
+# 并修改复制后的某个值 df.iloc[2,2] = 1111
+def copyRows():
+    pd1 = pd.DataFrame(np.arange(25).reshape(5, 5))
+    pd2 = pd.DataFrame()
+    print(pd1)
+    print('-------------------------------------')
+    a = pd1.iloc[-1,:].T
+    n = pd1.shape[0]-1
+    pd1.drop([n],inplace=True)
+    print(pd1)
+    print('-------------------------------------')
+    d = pd.DataFrame(a).T
+    # 修改值
+    d.iloc[0, 2] = 222
+    print(d)
+    print('-------------------------------------')
+    pd1 = pd1.append([d])
+    print(pd1)
+
+# 读取数据，并返回字典格式数据
+def testDropRows(train):
+    a = train.iloc[-1, :]
+    n = train.shape[0] - 1
+    print(train.head(15))
+    print(train.shape)
+    print('-------------------------------------')
+    train.drop([n], inplace=True)
+    d = pd.DataFrame(a).T
+    # 修改值
+    d.iloc[0, 1] = 10
+    train = train.append([d])
+    print(train.head(15))
+    print(train.shape)
+    print('-----------------------------------------------')
+    a = train.iloc[-1, :]
+    train.drop([n-1], inplace=True)
+    d = pd.DataFrame(a).T
+    # 修改值
+    d.iloc[0, 1] = 11
+    train = train.append([d])
+    print(train.head(15))
+    print(train.shape)
+    print('-----------------------------------------------')
+    a = train.iloc[-1, :]
+    train.drop([n - 2], inplace=True)
+    d = pd.DataFrame(a).T
+    # 修改值
+    d.iloc[0, 1] = 12
+    train = train.append([d])
+    print(train.head(15))
+    print(train.shape)
+    print('-----------------------------------------------')
+    a = train.iloc[-1, :]
+    train.drop([n - 3], inplace=True)
+    d = pd.DataFrame(a).T
+    # 修改值
+    d.iloc[0, 1] = 13
+    train = train.append([d])
+    print(train.head(15))
+    print(train.shape)
+    print('-----------------------------------------------')
+    a = train.iloc[-1, :]
+    train.drop([n - 4], inplace=True)
+    d = pd.DataFrame(a).T
+    # 修改值
+    d.iloc[0, 1] = 14
+    train = train.append([d])
+    print(train.head(15))
+    print(train.shape)
+    return train
+def testSet():
+    fruits = {"apple", "banana", "cherry"}
+    fruits.add("banana")
+    print(fruits)
+
+# 读取数据，并返回字典格式数据
+def readDataToDict1():
+    test_path = 'D:/data/python/work/city_line_message.csv'
+    names = ['area_id','city_leave']
+    train = pd.read_csv(filepath_or_buffer=test_path, sep=",", names=names, encoding='utf-8')
+    d1 = train['area_id'].value_counts()
+    for i, v in d1.iteritems():
+        print('index: ', i, 'value: ', v)
+
+def getSetChaJi():
+    activity_type_set = {1.0,2.0,5.0,8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0}
+    activity_type_list = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0}
+    af = activity_type_list - activity_type_set
+    print(af)
+    for i in af:
+        print(i)
+
+def method1():
+    activity_type_set0 = set()
+    activity_type_set0 = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0}
+    print(type(activity_type_set0))
+
+def copyRows11():
+    girl_list = [1.0, 2.0, 3.0, 4.0, 5.0]
+    girl_set = set(girl_list)  # 嘿嘿，把list转成set，set就接受一个参数
+    print(girl_set)
+    girl_set.add(1.0)
+    print(girl_set)
 
 if __name__ == '__main__':
     #method055()
-    data1 = pd.read_csv("D:/data/python/test/credit_card_default.csv")
+    #data1 = pd.read_csv("D:/data/python/test/credit_card_default.csv")
     #method01(data1)
-    jiequzifuchuan()
+    #twoDf_pingjie()
+    test_path = 'D:/data/python/work/city_line_message1.csv'
+    names = ['area_id', 'city_leave']
+    train = pd.read_csv(filepath_or_buffer=test_path, sep=",", names=names, encoding='utf-8')
+    print(train.head(15))
+    train = testDropRows(train)
+    print('+++++++++++++++++++++++++++++++++++++++++++++')
+    print(train.head(15))

@@ -45,6 +45,9 @@ def get_best_model_and_accuracy(name,model,params,X,y):
     # 预测的平均时间 （秒）,从该指标可以看出模型在真实世界的性能
     print(name + " - Average Time to Score (s) : {}".format(round(grid.cv_results_['mean_score_time'].mean(),3)))
 
+def filedHandle(x):
+    return round(x,8)
+
 '''
 根据特征直接的相关性选择特征
     输入：count_rule ：评估规则，可选取值为f_classif，f_regression，chi2
@@ -53,12 +56,13 @@ def get_best_model_and_accuracy(name,model,params,X,y):
             from sklearn.feature_selection import chi2          # 卡方检验
          X : 特征数据矩阵
          y : 标签矩阵
+    结果P值的意义:假设特征与响应变量之间没有关系的概率，因此p值越低，则特征与响应变量的关系越大
+         
 '''
-
 def chooseFeatureBy_P_value(count_rule,X,y):
     #selectKBest在给定目标函数后选择k个最高分
     # 只保留最佳的五个特征，
-    k_best = SelectKBest(count_rule,k=5)
+    k_best = SelectKBest(count_rule,k=15)
     #k_best = SelectKBest(f_regression,k=5)
     #k_best = SelectKBest(chi2,k=5)
 
@@ -66,14 +70,17 @@ def chooseFeatureBy_P_value(count_rule,X,y):
     df1 = k_best.fit_transform(X,y)  # 获取选定的结果数据集
 
     # 获取列的p值
-    messagePrint(k_best.pvalues_)
+    #messagePrint(k_best.pvalues_)
+    #messagePrint(df1)
     #特征和p值组成DataFrame
     #按p值排列
     p_values = pd.DataFrame({'column':X.columns,'p_value':k_best.pvalues_}).sort_values('p_value')
+    p_values['p_value'] = p_values['p_value'].apply(lambda x: filedHandle(x))
     #选择阈值为0.05的特征
     p_values = p_values[p_values['p_value'] < 0.05]
     # 取前五个特征
     messagePrint(p_values)
+    return df1
 
 
 '''

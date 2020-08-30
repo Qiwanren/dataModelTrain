@@ -7,6 +7,8 @@ from sklearn.metrics import roc_auc_score
 from xgboost import plot_importance
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder     #用于one-hot编码
+
 # 划分数据集
 from sklearn.model_selection import train_test_split
 from utils.handle_pyplot import showTree, draw_heatmap, showZft
@@ -121,14 +123,14 @@ def fileDeficiencyValue1(data):
     # 处理service_type字段
     data['service_type'] = data['service_type'].apply(lambda x:handleServiceType(x))
     # 处理以数字为类别的特征
-    type_feature = ['prov_id', 'cust_sex', 'brand_flag', 'heyue_flag', 'is_limit_flag', 'product_type', '5g_flag','service_type']
+    type_feature = ['cust_sex', 'brand_flag', 'heyue_flag', 'is_limit_flag', 'product_type', '5g_flag','service_type'] # prov_id
     # 对定性数据，进行填充，填充值为占比最大的类别
     for f in type_feature:
         type_value = data[f].value_counts().index[0]
         data[f].fillna(type_value, inplace=True)
 
     # 为省分值数据，若缺零，则进行填补
-    data['prov_id'] = data['prov_id'].apply(lambda x:handleProvID(x))
+    #data['prov_id'] = data['prov_id'].apply(lambda x:handleProvID(x))
     return data
 
 def handleTypeFeatureToInt(data):
@@ -145,8 +147,7 @@ def fileDeficiencyValue2(data):
                    'active_days', 'imei_duration', 'avg_duratioin']
 
     # 单独处理avg_duratioin字段
-    data['avg_duratioin'] = data['avg_duratioin'].apply(pd.to_numeric, errors='coerce').fillna(13.6)
-
+    #data['avg_duratioin'] = data['avg_duratioin'].apply(pd.to_numeric, errors='coerce').fillna(13.6)
 
     # 处理数值型特征
     for param in nums_params:
@@ -158,9 +159,8 @@ def fileDeficiencyValue2(data):
         #data[param] = data[param].apply(pd.to_numeric, errors='coerce').fillna(avg_n)
         data[param].fillna(avg_n,inplace=True)
         data[param] = data[param].round(2)
-
-    # 通过min_max方式对数据进行归一化处理
-    data[param] = data[param].map(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
+    print('---------------------数据填充完成-------------------')
+    messagePrint(data.info())
     return data
 
 def handleTypeFeature(data):
@@ -192,6 +192,20 @@ def readData(path,labels):
         train = pd.read_csv(filepath_or_buffer=path, sep=",", names=all_params,quoting=csv.QUOTE_NONE, encoding='utf-8')
     return train
 
+def dataNrmalizing(data):
+    nums_params = ['cert_age', 'total_fee', 'jf_flux', 'fj_arpu', 'ct_voice_fee', 'total_flux', 'total_dura',
+                   'roam_dura', 'total_times', 'total_nums', 'local_nums', 'roam_nums', 'in_cnt', 'out_cnt',
+                   'in_dura', 'out_dura', 'visit_cnt', 'visit_dura', 'up_flow', 'down_flow', 'total_flow',
+                   'active_days', 'imei_duration', 'avg_duratioin']
+
+    # 通过min_max方式对数据进行归一化处理
+    z_scaler = lambda x: (x - np.mean(x)) / np.std(x)
+    data1 = data[nums_params]
+    data.drop(nums_params, axis=1, inplace=True)  # inplace=True, 直接从内部删除
+    data1 =  data1[nums_params].apply(z_scaler)
+    data = pd.concat([data, data1], axis=1)
+    return data
+
 def dataHandle(dataset):
     # 处理service_type字段
     # 处理异常的数据
@@ -204,6 +218,8 @@ def dataHandle(dataset):
     dataset = fileDeficiencyValue2(dataset)
     # 对定性数据进行编码
     dataset = handleTypeFeature(dataset)
+    # 对数字特征进行归一化处理
+    dataset = dataNrmalizing(dataset)
     return dataset
 
 
@@ -216,7 +232,7 @@ def xgboostModelTrain(x_train,y_train,x_test,y_test):
         'booster': 'gbtree',  ####  gbtree   gblinear
         'objective': 'binary:logistic',  # 多分类的问题  'objective': 'binary:logistic' 二分类，multi:softmax 多分类问题
         'gamma': 0.3,  # 用于控制是否后剪枝的参数,越大越保守，一般0.1、0.2这样子。
-        'max_depth': 7,  # 构建树的深度，越大越容易过拟合
+        'max_depth': 8,  # 构建树的深度，越大越容易过拟合
         'min_child_weight': 5,
         'eta': 0.15,  # 如同学习率
         'learning_rate': 0.08,
@@ -237,10 +253,6 @@ def xgboostModelTrain(x_train,y_train,x_test,y_test):
     ## 特征拟合
     #model.fit(x_train,y_train)
     # showTree(model)
-
-    ## 分析特征值
-    importance = model.get_fscore()
-    importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
 
     ans = model.predict(xgb_test)
     #print('预测值AUC为 ：%f' % roc_auc_score(y_test, ans))
@@ -273,8 +285,8 @@ def getModelResult(trainFilePath,testFilePath):
     # 处理标签数据
     train = handleTypeFlag(train)
     y_train = train[label]
-    # test = handleTypeFlag(test)
-    # y_test = test['flag']
+    #test = handleTypeFlag(test)
+    #y_test = test['flag']
 
     # 备份测试数据
     test1 = test.copy(deep=True)
@@ -293,7 +305,8 @@ def getModelResult(trainFilePath,testFilePath):
     print('-----------------------开始特征处理-------------------------')
     train = dataHandle(train)
     test = dataHandle(test)
-
+    print(train.shape)
+    print(test.shape)
     # 训练模型
     x_train = train.iloc[:, train.columns != label]
     x_test = test.iloc[:, test.columns != label]
@@ -316,7 +329,7 @@ if __name__ == '__main__':
     test_path4 = 'D:/data/python/work/data1/qwr_woyinyue_user_result2006_070.txt'
     test_path5 = 'D:/data/python/work/data1/qwr_woyinyue_user_result2006_013.txt'
 
-    paths = [test_path4,test_path5]
+    paths = [test_path1,test_path2]
     for path in paths:
         getModelResult(trainFilePath,path)
         print(path +' : 完成')

@@ -56,5 +56,12 @@ def method05():
     print(len(prov))
     print(int(prov))
 
+def method06():
+    pythontab = ['p', 'y', 't', 'h', 'o', 'n', 't', 'a', 'b']
+    if 't' in pythontab:
+        print('t in pythontab')
+    if 'w' not in pythontab:
+        print('w is not in pythontab')
+
 if __name__ == '__main__':
-    method05()
+    method06()

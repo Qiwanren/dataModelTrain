@@ -21,5 +21,10 @@ def method1():
     cuts3 = pd.cut(ages, bins, labels=group_names)
     print(cuts3)
 
+def one_hot_code():
+    pass
+
+
+
 if __name__ == '__main__':
     method1()
